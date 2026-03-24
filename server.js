@@ -105,15 +105,21 @@ const STAGE_EVIDENCE_KEYWORDS = {
     'adoption program', 'change management', 'organizational rollout', 'training at scale',
   ],
   live: [
-    'live in production', 'live and in use', 'in production', 'active use', 'being used',
-    'in use on real', 'pilot underway', 'pilot rollout', 'pilot with ', 'active users',
-    'live on ', 'deployed and in use', 'launched', 'real workflow', 'real output',
-    'in use by ', 'processing real', 'handling real', 'in daily use', 'now live',
-    'went live', 'has launched', 'has gone live', 'currently live', 'production use',
-    'running in production', 'pilot phase', 'pilot is running', 'pilot active',
-    'pilot to ', 'in pilot', 'users are interacting', 'producing output', ' is live',
-    'are live', 'production environment', 'processing incidents', 'real users',
-    'processing reports', 'handling requests in',
+    // Strong explicit live phrases (also checked by isStrongLiveEvidence)
+    'live and in use', 'live in production', 'live on ', ' is live', 'are live', 'now live',
+    'went live', 'has gone live', 'currently live', 'in daily use', 'in active use',
+    'pilot underway', 'pilot rollout', 'pilot with ', 'rollout underway',
+    'used on real projects', 'deployed and in use', 'in use',
+    // Additional live signals
+    'in production', 'active use', 'being used', 'in use on real', 'active users',
+    'real workflow', 'real output', 'in use by ', 'processing real', 'handling real',
+    'has launched', 'launched', 'production use', 'running in production',
+    'pilot phase', 'pilot is running', 'pilot active', 'pilot to ', 'in pilot',
+    'users are interacting', 'producing output', 'production environment',
+    'processing incidents', 'real users', 'processing reports', 'handling requests in',
+    // Slack-style live phrases
+    'now using', 'users onboarded', 'pilot started', 'active usage', 'deployed',
+    'live on projects', 'in use on projects', 'using it on', 'using in',
   ],
   building: [
     // Only CLEARLY pre-launch development work. Do NOT include terms that could describe
@@ -136,6 +142,35 @@ const STAGE_EVIDENCE_KEYWORDS = {
     'early concept', 'defining use case', 'concepting', 'early design',
   ],
 };
+
+// ── STRONG LIVE PHRASES ─────────────────────────────────────────────────────
+// Explicit phrase list used for pre-LLM hardcoded live detection.
+// If ANY phrase matches text from the sheet, a doc, or Slack, it is unambiguous Live evidence.
+// Checked by isStrongLiveEvidence() before any LLM interpretation.
+const STRONG_LIVE_PHRASES = [
+  'live and in use', 'live in production', 'live on ', ' is live', 'are live',
+  'now live', 'went live', 'has gone live', 'currently live',
+  'in use', 'in active use', 'active use', 'being used',
+  'pilot underway', 'pilot rollout', 'pilot with ', 'rollout underway',
+  'used on real projects', 'deployed and in use', 'launched',
+  'in daily use', 'real users', 'active users', 'production use',
+  'running in production', 'now using', 'users onboarded', 'pilot started',
+  'active usage', 'live on projects', 'in use on projects',
+];
+
+/**
+ * Returns { found: boolean, snippet: string|null }
+ * Checks text against STRONG_LIVE_PHRASES before any LLM runs.
+ * Use this as a hard pre-LLM gate on sheet text, doc text, and Slack text.
+ */
+function isStrongLiveEvidence(text) {
+  if (!text) return { found: false, snippet: null };
+  const t = text.toLowerCase();
+  for (const phrase of STRONG_LIVE_PHRASES) {
+    if (t.includes(phrase)) return { found: true, snippet: phrase };
+  }
+  return { found: false, snippet: null };
+}
 
 // Confidence thresholds
 const DOC_CONFIDENCE_THRESHOLD   = 0.45;
@@ -180,6 +215,9 @@ let STATE = {
   // Tracks project names mentioned in docs/Slack that don't match the inventory
   // Key = slug of name, value = { name, count, lastSeen }
   unmatchedMentions: {},
+
+  // Per-project live evidence debug data — populated each sync, read by /api/debug/live
+  liveDebug: [],
 };
 
 
@@ -393,6 +431,10 @@ function extractEvidenceFlags(text) {
   for (const kw of STAGE_EVIDENCE_KEYWORDS.live) {
     if (t.includes(kw)) { live = true; snippets.push(kw); }
   }
+  // Hard gate: if isStrongLiveEvidence fires, live = true regardless of keyword matches above
+  const strongLive = isStrongLiveEvidence(text);
+  if (strongLive.found) { live = true; if (strongLive.snippet) snippets.push(strongLive.snippet); }
+
   for (const kw of STAGE_EVIDENCE_KEYWORDS.building) {
     if (t.includes(kw)) { building = true; snippets.push(kw); }
   }
@@ -426,6 +468,12 @@ function accumulateEvidence(proj, flags, source, evidenceText, syncMs) {
   proj.evidence.building   = proj.evidence.building   || !!(flags.building);
   proj.evidence.scoping    = proj.evidence.scoping    || !!(flags.scoping);
   proj.evidence.blocked    = proj.evidence.blocked    || !!(flags.blocked);
+
+  // Track per-source live evidence for debug endpoint + logging
+  if (flags.live) {
+    if (source === 'doc')   proj._liveEvidenceFromDocs  = true;
+    if (source === 'slack') proj._liveEvidenceFromSlack = true;
+  }
 
   // Track provenance: timestamp + which sources have contributed
   const hadMeaningful = flags.live || flags.enablement || flags.building || flags.blocked;
@@ -1472,6 +1520,10 @@ function initializeProjectMap(inventory, syncMs) {
     const isSheetBlocked = health === 'blocked';
     const blockingDept   = isSheetBlocked ? inferBlockingDepartment(inv.notes || '') : null;
 
+    // Detect strong live evidence directly from the raw sheet text (pre-LLM gate)
+    const sheetLiveCheck = isStrongLiveEvidence(inv.stage || '');
+    const sheetHasLive   = sheetLiveCheck.found || STAGE_PRIORITY[initialStage] >= STAGE_PRIORITY.live;
+
     map.set(inv.id, {
       // Identity
       id:               inv.id,
@@ -1494,8 +1546,13 @@ function initializeProjectMap(inventory, syncMs) {
       // Per-sync evidence accumulator — ORed by accumulateEvidence() from each source.
       // Reset to false each sync; determineStage() uses this + durable flags.
       evidence: { live: false, enablement: false, building: false, scoping: false, blocked: false },
-      hasEverBeenLive:           STAGE_PRIORITY[initialStage] >= STAGE_PRIORITY.live,
+      hasEverBeenLive:           sheetHasLive,
       hasEverBeenEnabled:        STAGE_PRIORITY[initialStage] >= STAGE_PRIORITY.enablement,
+      // ── Debug fields (internal — stripped before sending to frontend) ──
+      _sheetRawStage:         inv.stage || '',
+      _liveEvidenceFromSheet: sheetHasLive,
+      _liveEvidenceFromDocs:  false,
+      _liveEvidenceFromSlack: false,
       firstLiveEvidenceAt:       STAGE_PRIORITY[initialStage] >= STAGE_PRIORITY.live        ? syncMs : null,
       firstEnablementEvidenceAt: STAGE_PRIORITY[initialStage] >= STAGE_PRIORITY.enablement  ? syncMs : null,
       // ── Status (health) — dynamic, independent of stage ───────────
@@ -1643,28 +1700,55 @@ async function runFullSync() {
   // project. This is the ONLY place stage is decided. AI never sets stage.
   console.log('[sync] Step 4 — Deterministic stage resolution');
   for (const proj of projectMap.values()) {
+    // Capture hasEverBeenLive BEFORE determineStage so we can log the delta
+    const hadEverBeenLive    = proj.hasEverBeenLive;
+    const hadEverBeenEnabled = proj.hasEverBeenEnabled;
+
     const finalStage = determineStage(proj, syncMs);
     proj.stage = finalStage;
+
     // Projects with no doc/slack signal keep sheet baseline confidence (≤0.60)
     if (!proj.lastEvidenceTimestamp) {
       proj.stageConfidence = Math.min(proj.stageConfidence || 0.5, 0.60);
     }
-    // Debug log per STEP 6 requirement
+
     const ev = proj.evidence;
     console.log(
-      `  [stage] "${proj.name}": ${finalStage}` +
-      ` | source=${proj.stageSource}` +
-      ` | hasEverBeenLive=${proj.hasEverBeenLive}` +
-      ` | hasEverBeenEnabled=${proj.hasEverBeenEnabled}` +
-      ` | evidence.live=${ev.live} evidence.enablement=${ev.enablement} evidence.building=${ev.building} evidence.blocked=${ev.blocked}` +
-      ` | snippets: [${(proj.stageEvidence || []).slice(0, 2).map(s => `"${s.slice(0,40)}"`).join(', ')}]`
+      `  [live-debug] "${proj.name}"` +
+      `\n    sheetRaw="${proj._sheetRawStage}" → baselineStage=${proj.baselineStageFromSheet}` +
+      `\n    liveEvidence: sheet=${proj._liveEvidenceFromSheet} | docs=${proj._liveEvidenceFromDocs} | slack=${proj._liveEvidenceFromSlack}` +
+      `\n    hasEverBeenLive(pre)=${hadEverBeenLive} hasEverBeenEnabled(pre)=${hadEverBeenEnabled}` +
+      `\n    accumulated: live=${ev.live} enablement=${ev.enablement} building=${ev.building} blocked=${ev.blocked}` +
+      `\n    → finalStage=${finalStage} | source=${proj.stageSource} | reason="${proj.stageReason}"` +
+      `\n    snippets: [${(proj.stageEvidence || []).slice(0, 3).map(s => `"${s.slice(0,50)}"`).join(' | ')}]`
     );
   }
 
   // ── 7. Finalise projects ──────────────────────────────────────────
-  const projects = Array.from(projectMap.values()).map(p => {
-    // strip internal-only fields before sending to frontend
-    const { sourceEvidence, explicitStage, ...pub } = p;
+  const liveDebug = [];
+  const projects  = Array.from(projectMap.values()).map(p => {
+    // Capture debug snapshot before stripping internal fields
+    liveDebug.push({
+      name:                  p.name,
+      sheetRawStage:         p._sheetRawStage         || '',
+      baselineStageFromSheet: p.baselineStageFromSheet,
+      liveEvidenceFromSheet: p._liveEvidenceFromSheet  || false,
+      liveEvidenceFromDocs:  p._liveEvidenceFromDocs   || false,
+      liveEvidenceFromSlack: p._liveEvidenceFromSlack  || false,
+      hasEverBeenLive:       p.hasEverBeenLive,
+      hasEverBeenEnabled:    p.hasEverBeenEnabled,
+      finalStage:            p.stage,
+      stageReason:           p.stageReason,
+      stageSource:           p.stageSource,
+      topLiveSnippets:       (p.stageEvidence || []).slice(0, 5),
+    });
+
+    // Strip internal-only fields before sending to frontend
+    const {
+      sourceEvidence, explicitStage,
+      _sheetRawStage, _liveEvidenceFromSheet, _liveEvidenceFromDocs, _liveEvidenceFromSlack,
+      ...pub
+    } = p;
     return {
       ...pub,
       signals:            p.signals.slice(0, 5),
@@ -1735,6 +1819,7 @@ async function runFullSync() {
   STATE.summary    = summary;
   STATE.lastSync   = syncMs;
   STATE.syncStatus = 'idle';
+  STATE.liveDebug  = liveDebug;
 
   const result = {
     projects:    projects.length,
@@ -1767,16 +1852,19 @@ app.post('/api/sync', async (req, res) => {
   }
 });
 
-// GET /api/sync  —  browser-friendly alias (same behaviour as POST)
-app.get('/api/sync', async (req, res) => {
-  try {
-    const result = await runFullSync();
-    res.json({ ok: true, ...result });
-  } catch (err) {
-    console.error('[/api/sync GET]', err.message);
-    STATE.syncStatus = 'idle';
-    res.status(500).json({ ok: false, error: err.message });
+// GET /api/sync  —  non-blocking browser-friendly trigger.
+// Returns immediately with { ok: true, status: 'syncing' }.
+// Poll GET /api/dashboard/overview and watch syncStatus → 'idle' to know when done.
+app.get('/api/sync', (req, res) => {
+  if (STATE.syncStatus === 'syncing') {
+    return res.json({ ok: true, status: 'syncing', message: 'Sync already in progress. Poll /api/dashboard/overview for status.' });
   }
+  // Fire and forget — do NOT await
+  runFullSync().catch(err => {
+    console.error('[/api/sync GET background]', err.message);
+    STATE.syncStatus = 'idle';
+  });
+  res.json({ ok: true, status: 'syncing', message: 'Sync started. Poll /api/dashboard/overview until syncStatus is idle.' });
 });
 
 // POST /api/slack/sync  —  kept for backward compatibility
@@ -1819,6 +1907,12 @@ app.get('/api/dashboard/projects/:id', (req, res) => {
 app.get('/api/dashboard/blockers',     (req, res) => res.json(STATE.blockers));
 app.get('/api/dashboard/signals',      (req, res) => res.json(STATE.signals));
 app.get('/api/dashboard/summary',      (req, res) => res.json(STATE.summary));
+
+// GET /api/debug/live  —  per-project live evidence trace (debug only)
+// Shows exactly why each project was or was not classified as Live.
+app.get('/api/debug/live', (req, res) => {
+  res.json(STATE.liveDebug || []);
+});
 
 app.get('/api/inventory', (req, res) => res.json({
   count:    STATE.lastInventory.length,
