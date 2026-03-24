@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 120" width="520" height="120">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0&amp;display=swap');
+    </style>
+  </defs>
+  <!-- CLAYCO wordmark -->
+  <text
+    x="8"
+    y="98"
+    font-family="'IM Fell English', 'Garamond', 'Georgia', 'Times New Roman', serif"
+    font-size="100"
+    font-weight="400"
+    letter-spacing="-1"
+    fill="white"
+    xml:space="preserve">CLAYCO</text>
+  <!-- AI badge box -->
+  <rect x="448" y="4" width="64" height="38" rx="3" ry="3"
+    fill="none" stroke="white" stroke-width="2.5"/>
+  <text
+    x="480"
+    y="31"
+    text-anchor="middle"
+    font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-size="20"
+    font-weight="600"
+    letter-spacing="1"
+    fill="white">AI</text>
+</svg>
