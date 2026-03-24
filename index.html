@@ -1636,6 +1636,126 @@ const STAGE_LABEL = {
   'enablement': 'Enablement',
 };
 
+// Mirrors backend STAGE_PRIORITY — used by normalizeProject() forward-only safety net
+const STAGE_PRIORITY = { scoping: 0, building: 1, live: 2, enablement: 3 };
+
+const VALID_STAGES = ['scoping', 'building', 'live', 'enablement'];
+const VALID_HEALTH = ['on-track', 'at-risk', 'blocked', 'planning'];
+
+/**
+ * Canonical normalization applied to every project object at ingestion time.
+ * Called once when data arrives from the backend; all rendering reads the result.
+ *
+ * Responsibilities:
+ *  1. Lowercase all stage/health strings so comparisons never silently fail
+ *  2. Reject unknown stage values — fall back to 'scoping'
+ *  3. Enforce forward-only lifecycle using durable history flags:
+ *       hasEverBeenEnabled → stage must be 'enablement'
+ *       hasEverBeenLive    → stage must be >= 'live'
+ *     This is a client-side safety net that mirrors determineStage() on the backend.
+ *     If the backend sends wrong stage but correct flags, this corrects it.
+ */
+function normalizeProject(p) {
+  const n = { ...p };
+
+  // 1. Lowercase + trim all lifecycle strings
+  n.stage                  = (n.stage                  || '').toLowerCase().trim();
+  n.health                 = (n.health                 || '').toLowerCase().trim();
+  n.stageSource            = (n.stageSource            || 'sheet').toLowerCase().trim();
+  n.baselineStageFromSheet = (n.baselineStageFromSheet || '').toLowerCase().trim();
+
+  // 2. Reject unknown stage values
+  if (!VALID_STAGES.includes(n.stage)) n.stage = 'scoping';
+  if (!VALID_HEALTH.includes(n.health)) n.health = 'on-track';
+
+  // 3. Forward-only enforcement via durable history flags
+  if (n.hasEverBeenEnabled) {
+    n.stage = 'enablement';
+  } else if (n.hasEverBeenLive && (STAGE_PRIORITY[n.stage] ?? 0) < STAGE_PRIORITY.live) {
+    n.stage = 'live';
+  }
+
+  // 4. Ensure baselineStageFromSheet is valid, or mirror stage
+  if (!VALID_STAGES.includes(n.baselineStageFromSheet)) {
+    n.baselineStageFromSheet = n.stage;
+  }
+
+  return n;
+}
+
+/**
+ * debugStages()
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Logs a stage-by-stage trace of every project in state.projects.
+ * Call from the browser console after the dashboard loads:
+ *   debugStages()
+ *
+ * For each project it shows:
+ *   • id / name
+ *   • raw fields received from backend (stage, stageSource, baselineStageFromSheet,
+ *     hasEverBeenLive, hasEverBeenEnabled, stageReason)
+ *   • resolved stage used for render (post-normalizeProject)
+ *   • source of truth (stageSource)
+ *   • ⚠️ warnings if something looks wrong (invalid stage, forward-only violation, etc.)
+ *
+ * A summary count by stage is printed at the end.
+ */
+function debugStages() {
+  if (!window.state || !Array.isArray(state.projects)) {
+    console.warn('[StageDebug] state.projects not found — run after dashboard loads');
+    return;
+  }
+
+  console.group(
+    `[StageDebug] ${state.projects.length} project(s) — ${new Date().toLocaleTimeString()}`
+  );
+
+  state.projects.forEach((p, i) => {
+    const resolvedStage = p.stage;
+    const sourceOfTruth = p.stageSource ?? '(missing)';
+
+    const warn = [];
+    if (!VALID_STAGES.includes(resolvedStage))                                warn.push('⚠️ INVALID STAGE');
+    if (p.hasEverBeenEnabled  && resolvedStage !== 'enablement')              warn.push('⚠️ SHOULD BE enablement');
+    if (p.hasEverBeenLive && (STAGE_PRIORITY[resolvedStage] ?? 0) < STAGE_PRIORITY.live) warn.push('⚠️ SHOULD BE ≥ live');
+    if (!p.stageSource)                                                        warn.push('⚠️ stageSource missing');
+    if (p.baselineStageFromSheet && !VALID_STAGES.includes(p.baselineStageFromSheet)) warn.push('⚠️ bad baselineStageFromSheet');
+
+    const label = `[${i + 1}] ${p.name ?? p.id}  →  ${resolvedStage.toUpperCase()}` +
+                  (warn.length ? `  ${warn.join(' ')}` : '');
+
+    if (warn.length) {
+      console.groupCollapsed(`%c${label}`, 'color: orange; font-weight: bold');
+    } else {
+      console.groupCollapsed(label);
+    }
+
+    console.log('  id                    :', p.id);
+    console.log('  resolved stage        :', resolvedStage, '←', sourceOfTruth);
+    console.log('  baselineStageFromSheet:', p.baselineStageFromSheet ?? '(missing)');
+    console.log('  hasEverBeenLive       :', p.hasEverBeenLive        ?? '(missing)');
+    console.log('  hasEverBeenEnabled    :', p.hasEverBeenEnabled     ?? '(missing)');
+    console.log('  stageReason           :', p.stageReason            ?? '(none)');
+    console.log('  health                :', p.health);
+    if (p.stageEvidence?.length) {
+      console.log('  top evidence          :', p.stageEvidence.slice(0, 2).map(s => `"${s.slice(0, 80)}"`).join(' | '));
+    }
+
+    console.groupEnd();
+  });
+
+  const counts = { scoping: 0, building: 0, live: 0, enablement: 0, unknown: 0 };
+  state.projects.forEach(p => {
+    if (counts[p.stage] !== undefined) counts[p.stage]++;
+    else counts.unknown++;
+  });
+  console.log('[StageDebug] Summary:', counts);
+  console.groupEnd();
+}
+
+// Expose globally so it can be called from the browser console
+window.debugStages = debugStages;
+
 function badge(health) {
   const h     = health === 'planning' ? 'on-track' : (health || 'on-track');
   const label = STATUS_LABEL[health] || 'On Track';
@@ -1815,7 +1935,16 @@ async function openPanel(id) {
   state.selectedProjectId = id;
   renderTable();
 
-  const p = await getProjectById(id);
+  // Use the already-normalized object from state first.
+  // This guarantees the panel renders the same data as the table row.
+  // Only fall back to a server fetch if the project isn't in state yet (edge case).
+  let p = state.projects.find(x => x.id === id);
+  if (!p) {
+    try {
+      const raw = await getProjectById(id);
+      p = raw ? normalizeProject(raw) : null;
+    } catch { p = null; }
+  }
   if (!p) return;
 
   // Badges: status + stage
@@ -2056,12 +2185,21 @@ async function refresh() {
     // ── 4. Fetch and render dashboard data ─────────────────────────────
     btn.textContent = '↻ Loading…';
     const data = await getDashboardData();
-    state.projects = data.projects;
-    state.blockers = data.blockers;
-    state.signals  = data.signals;
-    state.summary  = data.summary;
+    // normalizeProject() is the single source of truth for stage on the frontend.
+    // It lowercases, validates, and enforces forward-only lifecycle using durable flags.
+    // Every downstream function (metrics, table, filters, panel) reads from this.
+    state.projects = (data.projects || []).map(normalizeProject);
+    state.blockers = data.blockers || [];
+    state.signals  = data.signals  || [];
+    state.summary  = data.summary  || {};
     renderAll();
     console.log(`[Dashboard] Dashboard data loaded — ${state.projects.length} project(s)`);
+    console.log('[Dashboard] Stage breakdown:', {
+      scoping:    state.projects.filter(p => p.stage === 'scoping').length,
+      building:   state.projects.filter(p => p.stage === 'building').length,
+      live:       state.projects.filter(p => p.stage === 'live').length,
+      enablement: state.projects.filter(p => p.stage === 'enablement').length,
+    });
 
   } catch (err) {
     // Only fall back to demo if the backend was never reachable
