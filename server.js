@@ -1767,6 +1767,18 @@ app.post('/api/sync', async (req, res) => {
   }
 });
 
+// GET /api/sync  —  browser-friendly alias (same behaviour as POST)
+app.get('/api/sync', async (req, res) => {
+  try {
+    const result = await runFullSync();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    console.error('[/api/sync GET]', err.message);
+    STATE.syncStatus = 'idle';
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
 // POST /api/slack/sync  —  kept for backward compatibility
 app.post('/api/slack/sync', async (req, res) => {
   try {
