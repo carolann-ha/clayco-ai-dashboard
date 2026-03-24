@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Clayco AI — Executive Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Kufam:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    /* ─────────────────────────────────────────
+       RESET
+    ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    button { font-family: inherit; cursor: pointer; }
+
+    /* ─────────────────────────────────────────
+       DESIGN TOKENS
+    ───────────────────────────────────────── */
+    :root {
+      /* Brand */
+      --red:          #C8102E;
+      --red-dark:     #A00D24;
+      --red-subtle:   #FEF0F2;
+      --red-border:   rgba(200,16,46,0.2);
+
+      /* Neutrals */
+      --black:        #0C0C0C;
+      --gray-900:     #111111;
+      --gray-800:     #222222;
+      --gray-700:     #3A3A3A;
+      --gray-600:     #555555;
+      --gray-500:     #777777;
+      --gray-400:     #999999;
+      --gray-300:     #BBBBBB;
+      --gray-200:     #DCDCDC;
+      --gray-100:     #F0F0F0;
+      --gray-50:      #F7F7F7;
+      --white:        #FFFFFF;
+
+      /* Status */
+      --green:        #16A34A;
+      --green-light:  #ECFDF5;
+      --amber:        #D97706;
+      --amber-light:  #FFFBEB;
+      --rose:         #DC2626;
+      --rose-light:   #FEF2F2;
+      --slate:        #64748B;
+      --slate-light:  #F1F5F9;
+      --indigo:       #4338CA;
+      --indigo-light: #EEF2FF;
+
+      /* Typography */
+      --font-display: 'Kufam', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      --font-body:    'Helvetica Neue', Helvetica, Arial, sans-serif;
+      --font-mono:    'Eurostile', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+
+      /* Elevation */
+      --shadow-xs:    0 1px 2px rgba(0,0,0,0.06);
+      --shadow-sm:    0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md:    0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-lg:    0 16px 48px rgba(0,0,0,0.14), 0 4px 12px rgba(0,0,0,0.06);
+      --shadow-panel: -8px 0 40px rgba(0,0,0,0.16);
+
+      /* Motion */
+      --ease-out:   cubic-bezier(0.22, 1, 0.36, 1);
+      --ease-in:    cubic-bezier(0.64, 0, 0.78, 0);
+    }
+
+    /* ─────────────────────────────────────────
+       BASE
+    ───────────────────────────────────────── */
+    html { font-size: 15px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--gray-50);
+      color: var(--gray-800);
+      line-height: 1.55;
+      min-height: 100vh;
+    }
+
+    /* ─────────────────────────────────────────
+       HEADER
+    ───────────────────────────────────────── */
+    .header {
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      height: 58px;
+      background: var(--black);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      border-bottom: 2px solid var(--red);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      height: 38px;
+    }
+
+    /* Real logo image — white variant on dark header */
+    .logo-img {
+      height: 32px;
+      width: auto;
+      display: block;
+      object-fit: contain;
+    }
+
+    /* Fallback text treatment (shown only if image fails to load) */
+    .logo-fallback {
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-size: 1.35rem;
+      font-weight: 700;
+      color: var(--white);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .logo-chip {
+      background: var(--red);
+      color: var(--white);
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 3px 7px;
+      border-radius: 3px;
+      line-height: 1;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header-timestamp {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      color: var(--gray-500);
+    }
+
+    .btn-refresh {
+      background: transparent;
+      border: 1px solid var(--gray-700);
+      color: var(--gray-400);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 14px;
+      border-radius: 4px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-refresh:hover {
+      border-color: var(--red);
+      color: var(--white);
+    }
+
+    /* ─────────────────────────────────────────
+       PAGE LAYOUT
+    ───────────────────────────────────────── */
+    .page {
+      max-width: 1360px;
+      margin: 0 auto;
+      padding: 32px 32px 64px;
+    }
+
+    .section { margin-bottom: 32px; }
+
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 10px;
+    }
+
+    /* ─────────────────────────────────────────
+       EXEC BRIEFING
+    ───────────────────────────────────────── */
+    .exec-briefing {
+      background: var(--black);
+      border-radius: 12px;
+      padding: 28px 32px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .exec-briefing::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--red);
+    }
+
+    .exec-briefing-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .exec-briefing-label {
+      font-family: var(--font-mono);
+      font-size: 0.64rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--red);
+    }
+
+    .exec-briefing-date {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      letter-spacing: 0.08em;
+      color: var(--gray-600);
+    }
+
+    .exec-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .exec-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+
+    .exec-card--alert {
+      background: rgba(200,16,46,0.08);
+      border-color: rgba(200,16,46,0.28);
+    }
+
+    .exec-card-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .exec-card--alert .exec-card-label { color: #F47F8C; }
+    .exec-card:not(.exec-card--alert) .exec-card-label { color: var(--gray-500); }
+
+    .exec-card-body {
+      font-size: 0.84rem;
+      line-height: 1.6;
+    }
+
+    .exec-card--alert .exec-card-body { color: #F0C0C7; }
+    .exec-card:not(.exec-card--alert) .exec-card-body { color: var(--gray-300); }
+
+    .exec-bullet {
+      display: flex;
+      gap: 8px;
+      font-size: 0.83rem;
+      line-height: 1.55;
+      padding: 4px 0;
+    }
+
+    .exec-bullet + .exec-bullet {
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .exec-bullet::before {
+      content: '·';
+      flex-shrink: 0;
+      opacity: 0.5;
+      margin-top: 1px;
+    }
+
+    .exec-card--alert .exec-bullet { color: #F0C0C7; }
+    .exec-card:not(.exec-card--alert) .exec-bullet { color: var(--gray-300); }
+
+    .exec-empty {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      font-style: italic;
+    }
+
+    /* ─────────────────────────────────────────
+       STAGE TILES  (formerly Metrics)
+    ───────────────────────────────────────── */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 14px;
+    }
+
+    .metric {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 20px 22px;
+      box-shadow: var(--shadow-xs);
+      text-align: center;
+      cursor: pointer;
+      transition: box-shadow 0.15s, transform 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .metric:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .metric.is-filtered {
+      border-color: var(--red);
+      box-shadow: 0 0 0 2px rgba(200,16,46,0.12), var(--shadow-sm);
+    }
+
+    .metric-value {
+      font-family: var(--font-display);
+      font-size: 2.4rem;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .metric-value--default { color: var(--gray-900); }
+    .metric-value--green   { color: var(--green); }
+    .metric-value--amber   { color: var(--amber); }
+    .metric-value--red     { color: var(--red); }
+    .metric-value--slate   { color: var(--slate); }
+    .metric-value--indigo  { color: var(--indigo); }
+
+    .metric-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+    }
+
+    .metric-sublabel {
+      font-size: 0.65rem;
+      color: var(--gray-400);
+      margin-top: 2px;
+    }
+
+    /* ─────────────────────────────────────────
+       CONTENT GRID
+    ───────────────────────────────────────── */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    /* ─────────────────────────────────────────
+       CARD SHELL
+    ───────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: 0.86rem;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .card-badge {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.08em;
+      color: var(--gray-400);
+      background: var(--gray-100);
+      padding: 2px 8px;
+      border-radius: 20px;
+    }
+
+    /* ─────────────────────────────────────────
+       PROJECT TABLE
+    ───────────────────────────────────────── */
+    .table-controls {
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .table-controls-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .table-controls-row + .table-controls-row {
+      margin-top: 8px;
+    }
+
+    .search {
+      flex: 1;
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      padding: 6px 12px 6px 32px;
+      font-family: var(--font-body);
+      font-size: 0.8rem;
+      color: var(--gray-800);
+      outline: none;
+      transition: border-color 0.15s;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: 10px center;
+    }
+
+    .search::placeholder { color: var(--gray-400); }
+    .search:focus { border-color: var(--red); background-color: var(--white); }
+
+    .filter-label {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      white-space: nowrap;
+    }
+
+    .chips { display: flex; gap: 6px; }
+
+    .chip {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--gray-200);
+      background: transparent;
+      color: var(--gray-500);
+      transition: all 0.13s;
+      white-space: nowrap;
+    }
+
+    .chip:hover { border-color: var(--gray-400); color: var(--gray-700); }
+
+    .chip.is-active         { background: var(--black);  border-color: var(--black);  color: var(--white); }
+    .chip.is-active-danger  { background: var(--red);    border-color: var(--red);    color: var(--white); }
+    .chip.is-active-amber   { background: var(--amber);  border-color: var(--amber);  color: var(--white); }
+
+    /* column grid: indicator | name | stage | status | updated */
+    .tbl-head,
+    .tbl-row {
+      display: grid;
+      grid-template-columns: 10px 1fr 100px 82px 88px;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .tbl-head {
+      padding: 7px 20px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .tbl-head-cell {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+    }
+
+    .tbl-row {
+      padding: 13px 20px;
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .tbl-row:last-child { border-bottom: none; }
+    .tbl-row:hover      { background: var(--gray-50); }
+    .tbl-row.is-selected { background: var(--red-subtle); }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .dot--green  { background: var(--green); }
+    .dot--amber  { background: var(--amber); }
+    .dot--red    { background: var(--red);   }
+    .dot--slate  { background: var(--slate); }
+
+    .row-attention {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+    }
+
+    .row-name {
+      font-size: 0.86rem;
+      font-weight: 500;
+      color: var(--gray-900);
+      margin-bottom: 1px;
+    }
+
+    .row-hint {
+      font-size: 0.72rem;
+      color: var(--red);
+      line-height: 1.3;
+    }
+
+    .row-updated {
+      font-size: 0.72rem;
+      color: var(--gray-400);
+    }
+
+    /* Status health badge */
+    .badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .badge--on-track { background: var(--green-light); color: var(--green); }
+    .badge--at-risk  { background: var(--amber-light); color: var(--amber); }
+    .badge--blocked  { background: var(--rose-light);  color: var(--rose);  }
+    .badge--planning { background: var(--slate-light); color: var(--slate); }
+
+    /* Stage badge */
+    .stage-badge {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 20px;
+    }
+
+    .stage-badge--scoping    { background: var(--slate-light);  color: var(--slate); }
+    .stage-badge--building   { background: var(--indigo-light); color: var(--indigo); }
+    .stage-badge--live       { background: var(--green-light);  color: var(--green); }
+    .stage-badge--enablement { background: var(--amber-light);  color: var(--amber); }
+
+    /* empty state */
+    .empty {
+      padding: 48px 20px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--gray-400);
+    }
+
+    /* ─────────────────────────────────────────
+       BLOCKERS PANEL
+    ───────────────────────────────────────── */
+    .blocker-list { padding: 4px 0; }
+
+    .blocker {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--gray-100);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+
+    .blocker:last-child { border-bottom: none; }
+    .blocker:hover { background: var(--gray-50); }
+
+    .blocker-project {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .blocker-text {
+      font-size: 0.8rem;
+      color: var(--gray-800);
+      line-height: 1.45;
+      margin-bottom: 6px;
+    }
+
+    .blocker-foot {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sev {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .sev--high   { background: var(--red); }
+    .sev--medium { background: var(--amber); }
+
+    .blocker-dept {
+      font-size: 0.7rem;
+      color: var(--gray-500);
+    }
+
+    .blocker-age {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.06em;
+      color: var(--gray-400);
+      background: var(--gray-100);
+      padding: 1px 6px;
+      border-radius: 20px;
+    }
+
+    /* ─────────────────────────────────────────
+       RECENT DEVELOPMENTS FEED
+    ───────────────────────────────────────── */
+    .signals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .signal {
+      background: var(--white);
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 16px 18px;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .signal-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .signal-project {
+      font-family: var(--font-mono);
+      font-size: 0.59rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+    }
+
+    .signal-time {
+      font-size: 0.66rem;
+      color: var(--gray-400);
+    }
+
+    .signal-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 3px;
+      margin-bottom: 8px;
+    }
+
+    .signal-type--milestone { background: var(--green-light);  color: var(--green); }
+    .signal-type--blocker   { background: var(--rose-light);   color: var(--rose);  }
+    .signal-type--update    { background: var(--indigo-light); color: var(--indigo); }
+    .signal-type--risk      { background: var(--amber-light);  color: var(--amber); }
+
+    .signal-text {
+      font-size: 0.8rem;
+      color: var(--gray-700);
+      line-height: 1.5;
+    }
+
+    /* ─────────────────────────────────────────
+       DETAIL PANEL
+    ───────────────────────────────────────── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0);
+      z-index: 200;
+      pointer-events: none;
+      transition: background 0.22s;
+    }
+
+    .overlay.is-open {
+      background: rgba(0,0,0,0.32);
+      pointer-events: all;
+    }
+
+    .panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 500px;
+      max-width: 92vw;
+      background: var(--white);
+      z-index: 201;
+      transform: translateX(100%);
+      transition: transform 0.28s var(--ease-out);
+      overflow-y: auto;
+      box-shadow: var(--shadow-panel);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel.is-open { transform: translateX(0); }
+
+    .panel-head {
+      background: var(--black);
+      padding: 28px 28px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      flex-shrink: 0;
+    }
+
+    .panel-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(255,255,255,0.08);
+      border: none;
+      color: var(--gray-400);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      line-height: 1;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .panel-close:hover {
+      background: rgba(255,255,255,0.16);
+      color: var(--white);
+    }
+
+    .panel-badges {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .panel-name {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+
+    .panel-meta {
+      font-size: 0.76rem;
+      color: var(--gray-500);
+    }
+
+    .panel-meta span + span::before {
+      content: ' · ';
+      color: var(--gray-700);
+    }
+
+    .panel-body { padding: 24px 28px; flex: 1; }
+
+    .panel-section { margin-bottom: 24px; }
+
+    .panel-section-label {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      margin-bottom: 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .panel-summary {
+      font-size: 0.88rem;
+      color: var(--gray-700);
+      line-height: 1.65;
+    }
+
+    .panel-blocker-box {
+      background: var(--rose-light);
+      border: 1px solid rgba(220,38,38,0.18);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .panel-blocker-text {
+      font-size: 0.84rem;
+      color: #991B1B;
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .panel-blocker-dept {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--rose);
+    }
+
+    .panel-milestone {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .milestone-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--black);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .milestone-text {
+      font-size: 0.86rem;
+      color: var(--gray-800);
+      font-weight: 500;
+    }
+
+    .signal-entries { }
+
+    .signal-entry {
+      display: flex;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .signal-entry:last-child { border-bottom: none; }
+
+    .signal-entry-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gray-300);
+      margin-top: 7px;
+      flex-shrink: 0;
+    }
+
+    .signal-entry-text {
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    /* ─────────────────────────────────────────
+       STAGE CONTEXT (detail panel)
+    ───────────────────────────────────────── */
+    .stage-detail {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .stage-detail-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .stage-detail-row:last-child { margin-bottom: 0; }
+
+    .stage-detail-key {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-400);
+      white-space: nowrap;
+      padding-top: 2px;
+      min-width: 68px;
+    }
+
+    .stage-detail-value {
+      font-size: 0.8rem;
+      color: var(--gray-700);
+      line-height: 1.5;
+    }
+
+    .stage-detail-conf {
+      display: inline-block;
+      margin-left: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: var(--gray-400);
+    }
+
+    .stage-evidence-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .stage-evidence-list li {
+      display: flex;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--gray-600);
+      line-height: 1.45;
+      padding: 3px 0;
+    }
+
+    .stage-evidence-list li::before {
+      content: '›';
+      flex-shrink: 0;
+      color: var(--gray-300);
+      font-size: 0.85rem;
+    }
+
+    /* ─────────────────────────────────────────
+       FOOTER
+    ───────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 32px 20px 0;
+      border-top: 1px solid var(--gray-200);
+      margin-top: 8px;
+    }
+
+    .footer-text {
+      font-family: var(--font-mono);
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray-300);
+    }
+
+    .footer-text em { color: var(--red); font-style: normal; }
+
+    /* ─────────────────────────────────────────
+       DIVIDER
+    ───────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--gray-200);
+      margin: 0;
+    }
+
+    /* ─── LIVE / DEMO MODE INDICATOR ─── */
+    .mode-pill {
+      font-family: var(--font-mono);
+      font-size: 0.58rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 20px;
+      border: 1px solid var(--gray-700);
+      color: var(--gray-500);
+      background: transparent;
+      transition: all 0.2s;
+    }
+
+    .mode-pill.is-live {
+      border-color: rgba(22, 163, 74, 0.4);
+      background:   rgba(22, 163, 74, 0.08);
+      color: var(--green);
+    }
+
+    .mode-pill.is-live::before {
+      content: '● ';
+      font-size: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════
+     HEADER
+═══════════════════════════════════ -->
+<header class="header">
+  <div class="logo">
+    <!--
+      Logo file: place clayco-ai-logo.svg (or .png) in the same folder as this HTML.
+      The white variant is used here (header is dark). Falls back to text if missing.
+    -->
+    <img
+      src="./clayco-ai-logo.svg"
+      class="logo-img"
+      alt="Clayco AI"
+      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+    />
+    <div class="logo-fallback">
+      <span class="logo-text">Clayco</span>
+      <span class="logo-chip">AI</span>
+    </div>
+  </div>
+  <div class="header-meta">
+    <span class="mode-pill" id="mode-pill">Demo</span>
+    <span class="header-timestamp" id="ts">—</span>
+    <button class="btn-refresh" id="btn-refresh" onclick="refresh()">↻ Refresh</button>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════
+     PAGE
+═══════════════════════════════════ -->
+<main class="page">
+
+  <!-- EXEC BRIEFING -->
+  <div class="section">
+    <div class="eyebrow">Executive Briefing</div>
+    <div class="exec-briefing">
+      <div class="exec-briefing-top">
+        <span class="exec-briefing-label">AI Solutions — Program Overview</span>
+        <span class="exec-briefing-date" id="brief-date">—</span>
+      </div>
+      <div class="exec-cards">
+        <div class="exec-card exec-card--alert">
+          <div class="exec-card-label">⚠ Needs Attention</div>
+          <div class="exec-card-body" id="ec-attention"></div>
+        </div>
+        <div class="exec-card">
+          <div class="exec-card-label">Progress</div>
+          <div class="exec-card-body" id="ec-positive"></div>
+        </div>
+        <div class="exec-card">
+          <div class="exec-card-label">Watch Next</div>
+          <div class="exec-card-body" id="ec-horizon"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STAGE TILES — click to filter by lifecycle stage -->
+  <div class="section">
+    <div class="metrics" id="metrics">
+      <div class="metric"><div class="metric-value metric-value--default">—</div><div class="metric-label">All Solutions</div></div>
+      <div class="metric"><div class="metric-value metric-value--slate">—</div><div class="metric-label">Scoping</div></div>
+      <div class="metric"><div class="metric-value metric-value--indigo">—</div><div class="metric-label">Building</div></div>
+      <div class="metric"><div class="metric-value metric-value--green">—</div><div class="metric-label">Live</div></div>
+      <div class="metric"><div class="metric-value metric-value--amber">—</div><div class="metric-label">Enablement</div></div>
+    </div>
+  </div>
+
+  <!-- SOLUTIONS + BLOCKERS -->
+  <div class="section">
+    <div class="content-grid">
+
+      <!-- SOLUTIONS TABLE -->
+      <div>
+        <div class="eyebrow">Current Priorities</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">AI Solutions</span>
+            <span class="card-badge" id="proj-count">—</span>
+          </div>
+          <div class="table-controls">
+            <!-- Row 1: search -->
+            <div class="table-controls-row">
+              <input type="text" class="search" id="search-input"
+                placeholder="Search solutions or departments…"
+                oninput="handleSearch(this.value)" />
+            </div>
+            <!-- Row 2: status filters -->
+            <div class="table-controls-row">
+              <span class="filter-label">Status</span>
+              <div class="chips">
+                <button class="chip is-active" id="chip-all"       onclick="setStatusFilter('all', this)">All</button>
+                <button class="chip"           id="chip-on-track"  onclick="setStatusFilter('on-track', this)">On Track</button>
+                <button class="chip"           id="chip-at-risk"   onclick="setStatusFilter('at-risk', this)">At Risk</button>
+                <button class="chip"           id="chip-blocked"   onclick="setStatusFilter('blocked', this)">Blocked</button>
+              </div>
+            </div>
+          </div>
+          <div class="tbl-head">
+            <div></div>
+            <div class="tbl-head-cell">Solution</div>
+            <div class="tbl-head-cell">Stage</div>
+            <div class="tbl-head-cell">Status</div>
+            <div class="tbl-head-cell">Last Updated</div>
+          </div>
+          <div id="proj-table">
+            <div class="empty">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BLOCKERS -->
+      <div>
+        <div class="eyebrow">Active Blockers</div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">Needs Resolution</span>
+            <span class="card-badge" id="blocker-count">—</span>
+          </div>
+          <div id="blocker-list">
+            <div class="empty">Loading…</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RECENT DEVELOPMENTS -->
+  <div class="section">
+    <div class="eyebrow">Recent Developments</div>
+    <div class="signals-grid" id="signals-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <p class="footer-text">
+      Clayco <em>AI</em> Executive Dashboard &nbsp;·&nbsp; <span id="footer-mode">Demo Mode</span>
+    </p>
+  </div>
+
+</main>
+
+<!-- ═══════════════════════════════════
+     DETAIL PANEL
+═══════════════════════════════════ -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+
+<aside class="panel" id="panel">
+  <div class="panel-head">
+    <button class="panel-close" onclick="closePanel()">✕</button>
+    <div class="panel-badges" id="p-badges"></div>
+    <div class="panel-name"  id="p-name">—</div>
+    <div class="panel-meta"  id="p-meta">—</div>
+  </div>
+
+  <div class="panel-body">
+
+    <div class="panel-section">
+      <div class="panel-section-label">Current Status</div>
+      <div class="panel-summary" id="p-summary">—</div>
+    </div>
+
+    <div class="panel-section" id="p-blocker-wrap" style="display:none">
+      <div class="panel-section-label">Active Blocker</div>
+      <div class="panel-blocker-box">
+        <div class="panel-blocker-text" id="p-blocker">—</div>
+        <div class="panel-blocker-dept" id="p-blocker-dept"></div>
+      </div>
+    </div>
+
+    <div class="panel-section">
+      <div class="panel-section-label">Developments</div>
+      <div class="signal-entries" id="p-signals"></div>
+    </div>
+
+    <div class="panel-section" id="p-stage-wrap">
+      <div class="panel-section-label">Stage Classification</div>
+      <div class="stage-detail">
+        <div class="stage-detail-row">
+          <div class="stage-detail-key">Source</div>
+          <div class="stage-detail-value" id="p-stage-source">—</div>
+        </div>
+        <div class="stage-detail-row" id="p-stage-baseline-row" style="display:none">
+          <div class="stage-detail-key">Sheet says</div>
+          <div class="stage-detail-value" id="p-stage-baseline">—</div>
+        </div>
+        <div class="stage-detail-row">
+          <div class="stage-detail-key">Reason</div>
+          <div class="stage-detail-value" id="p-stage-reason">—</div>
+        </div>
+        <div class="stage-detail-row" id="p-stage-evidence-row" style="display:none">
+          <div class="stage-detail-key">Evidence</div>
+          <div class="stage-detail-value">
+            <ul class="stage-evidence-list" id="p-stage-evidence"></ul>
+          </div>
+        </div>
+        <div class="stage-detail-row">
+          <div class="stage-detail-key">Confidence</div>
+          <div class="stage-detail-value" id="p-stage-conf">—</div>
+        </div>
+        <div class="stage-detail-row" id="p-stage-lastseen-row" style="display:none">
+          <div class="stage-detail-key">Last signal</div>
+          <div class="stage-detail-value" id="p-stage-lastseen">—</div>
+        </div>
+        <div class="stage-detail-row" id="p-stage-history-row" style="display:none">
+          <div class="stage-detail-key">History</div>
+          <div class="stage-detail-value" id="p-stage-history">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</aside>
+
+
+<script>
+/* ═══════════════════════════════════════════════════
+   DATA LAYER — ABSTRACTION
+═══════════════════════════════════════════════════ */
+
+const mockDataProvider = {
+  async getDashboardData() {
+    return {
+      summary:  SUMMARY,
+      projects: PROJECTS,
+      blockers: PROJECTS
+        .filter(p => p.topBlocker)
+        .map(p => ({
+          projectId:          p.id,
+          project:            p.name,
+          department:         p.department,
+          blockingDepartment: p.blockingDepartment,
+          blocker:            p.topBlocker,
+          blockerReason:      p.topBlocker,
+          age:                p.blockerAge || '—',
+          severity:           p.health === 'blocked' ? 'high' : 'medium',
+        })),
+      signals: DEVELOPMENTS,
+    };
+  },
+  async getProjectById(id) {
+    return PROJECTS.find(p => p.id === id) ?? null;
+  },
+};
+
+// ─── LIVE DATA PROVIDER ──────────────────────────────────────────────
+const API_BASE = 'https://clayco-ai-dashboard-backend.onrender.com';
+
+const liveDataProvider = {
+  async getDashboardData() {
+    const [overview, projects, blockers, signals] = await Promise.all([
+      fetch(`${API_BASE}/api/dashboard/overview`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`${API_BASE}/api/dashboard/projects`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`${API_BASE}/api/dashboard/blockers`).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+      fetch(`${API_BASE}/api/dashboard/signals`).then(r  => { if (!r.ok) throw new Error(r.status); return r.json(); }),
+    ]);
+    return { summary: overview.summary, projects, blockers, signals };
+  },
+  async getProjectById(id) {
+    const r = await fetch(`${API_BASE}/api/dashboard/projects/${id}`);
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  },
+};
+
+let isLiveMode = false;
+
+async function detectLiveMode() {
+  try {
+    // Generous timeout — Render free tier cold-starts can take 30–60 s
+    const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(20000) });
+    if (r.ok) {
+      console.log(`[Dashboard] Backend reachable at ${API_BASE}`);
+      return true;
+    }
+    console.warn(`[Dashboard] Backend health check returned HTTP ${r.status}`);
+    return false;
+  } catch (err) {
+    console.warn(`[Dashboard] Backend not reachable — ${err.message}`);
+    return false;
+  }
+}
+
+const getDashboardData = () => isLiveMode ? liveDataProvider.getDashboardData() : mockDataProvider.getDashboardData();
+const getProjectById   = (id) => isLiveMode ? liveDataProvider.getProjectById(id) : mockDataProvider.getProjectById(id);
+
+
+/* ═══════════════════════════════════════════════════
+   SEED DATA — used when server is not running
+═══════════════════════════════════════════════════ */
+
+const SUMMARY = {
+  attention: [
+    'Five solutions are blocked — three on IT provisioning (RFP Assistant, Prime Contract Intelligence, BIM Pipeline) with no response after 8–12 days.',
+    'Contract Signatory AI cannot proceed without Legal sign-off on AI authorization boundaries — open 14 days.',
+    'Change Order Prediction training cannot start until Procore data access is granted — request pending 8 days.',
+  ],
+  positive: [
+    'Safety Incident Classifier is live, processing 3× target volume with zero critical errors — Q2 expansion to 5 sites approved.',
+    'AI Cost Estimating Engine validated at 94% accuracy — Q2 preconstruction pilot on track.',
+  ],
+  horizon: [
+    'Subcontractor Intelligence stakeholder review Mar 31 — outcome will shape Q2 scope.',
+    'Field Vision AI pilot site must be confirmed by Apr 1 to protect the Q3 schedule.',
+    'Executive Reporting Automation targets go-live Mar 31.',
+  ],
+};
+
+const PROJECTS = [
+  {
+    id: 'p01', name: 'AI Cost Estimating Engine',
+    owner: 'Marcus Webb', department: 'Preconstruction',
+    stage: 'building', health: 'on-track',
+    stageReason: 'Active development — Procore API integration underway, Q2 pilot not yet launched',
+    stageConfidence: 0.90, stageEvidence: ['development underway', 'Q2 pilot launch'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '2h ago', leadershipAttention: false,
+    statusSummary: 'Model training and validation complete at 94% accuracy against the historical bid dataset. Procore API integration is underway with IT. On track for Q2 pilot launch with the preconstruction team.',
+    topBlocker: null, blockerAge: null, blockingDepartment: null,
+    nextMilestone: 'Procore API integration complete — Apr 4',
+    signals: [
+      'Model validation achieved 94% accuracy on 3-year historical dataset',
+      'IT approved API architecture for Procore integration',
+      'Q2 pilot scope confirmed: 3 preconstruction leads in Chicago',
+    ],
+  },
+  {
+    id: 'p02', name: 'Document Intelligence (RFI / Submittal)',
+    owner: 'Sarah Chen', department: 'Project Controls',
+    stage: 'building', health: 'at-risk',
+    stageReason: 'Building — accuracy threshold not yet met, retraining before launch',
+    stageConfidence: 0.85, stageEvidence: ['retraining pipeline initiated', 'pre-launch accuracy threshold'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '5h ago', leadershipAttention: true,
+    statusSummary: 'Submittal classification accuracy dropped to 71% against an 85% target, driven by a training data gap in MEP submittal types. Root cause confirmed. Retraining pipeline is active this week — a 2-week extension has been requested.',
+    topBlocker: 'Submittal accuracy at 71%, below the 85% launch threshold. Retraining underway — 2-week extension needed.',
+    blockerAge: '3 days', blockingDepartment: 'IT',
+    nextMilestone: 'Accuracy re-evaluation — Mar 28',
+    signals: [
+      'Root cause confirmed: MEP submittals underrepresented in training data',
+      'Retraining pipeline initiated with augmented dataset',
+      '2-week schedule extension requested and under review',
+    ],
+  },
+  {
+    id: 'p03', name: 'Schedule Risk Predictor',
+    owner: 'David Park', department: 'Project Controls',
+    stage: 'building', health: 'on-track',
+    stageReason: 'Building — running in shadow mode, not yet handed off to users',
+    stageConfidence: 0.80, stageEvidence: ['shadow mode testing', 'pilot handoff scheduled Apr 18'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '1d ago', leadershipAttention: false,
+    statusSummary: 'Risk model trained and running in shadow mode across three active projects. Initial signals are strong — predicting delays 12–18 days ahead of actual. Integration layer for Procore schedule data is in design.',
+    topBlocker: null, blockerAge: null, blockingDepartment: null,
+    nextMilestone: 'Project controls pilot handoff — Apr 18',
+    signals: [
+      'Shadow mode active across 3 live projects',
+      'Model predicting schedule delays 12–18 days ahead of actuals',
+      'Procore integration layer designed and in review',
+    ],
+  },
+  {
+    id: 'p04', name: 'Procurement AI Assistant',
+    owner: 'Rachel Torres', department: 'Procurement',
+    stage: 'building', health: 'at-risk',
+    stageReason: 'Building — vendor data integration incomplete, testing has not begun',
+    stageConfidence: 0.85, stageEvidence: ['interface and prompts finalized', 'integration underway'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '8h ago', leadershipAttention: true,
+    statusSummary: 'The assistant interface and prompts are finalized. Vendor database integration is delayed due to procurement team bandwidth constraints — testing cannot begin without live vendor data. April target is at risk.',
+    topBlocker: 'Vendor database integration delayed — procurement team unavailable until Apr 2.',
+    blockerAge: '5 days', blockingDepartment: 'Procurement',
+    nextMilestone: 'Vendor integration unblock + testing start — Apr 2',
+    signals: [
+      'Assistant interface and all prompt chains finalized',
+      'Procurement team bandwidth constraint escalated',
+      'April launch target at risk without immediate unblock',
+    ],
+  },
+  {
+    id: 'p05', name: 'Safety Incident Classifier',
+    owner: 'James Liu', department: 'Safety',
+    stage: 'live', health: 'on-track',
+    stageReason: 'Live — classifier is in production, processing real incident reports',
+    stageConfidence: 0.98, stageEvidence: ['live in production', 'processing 3× incident volume', 'zero critical errors in 30 days'],
+    hasEverBeenLive: true, hasEverBeenEnabled: false,
+    lastUpdated: '3h ago', leadershipAttention: false,
+    statusSummary: 'Classifier is live in production, processing incident reports at 3× initial target volume. Zero critical misclassifications in 30 days. Safety leadership approved Q2 expansion to 5 additional job sites.',
+    topBlocker: null, blockerAge: null, blockingDepartment: null,
+    nextMilestone: 'Q2 site expansion (5 sites) — Apr 14',
+    signals: [
+      '30-day production milestone — zero critical classification errors',
+      'Processing 3× projected incident report volume',
+      'Q2 expansion to 5 sites approved by safety leadership',
+    ],
+  },
+  {
+    id: 'p06', name: 'BIM Data Extraction Pipeline',
+    owner: 'Priya Nair', department: 'Technology',
+    stage: 'building', health: 'blocked',
+    stageReason: 'Building — pipeline complete but blocked before first real use; no users or data flowing yet',
+    stageConfidence: 0.82, stageEvidence: ['pipeline built and ready to test', 'pending IT security review'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '2d ago', leadershipAttention: true,
+    statusSummary: 'Pipeline development is complete and ready to test, but fully blocked on BIM repository access. IT security review has been pending 11 days with no response. No testing or validation is possible until access is granted.',
+    topBlocker: 'IT security review pending 11 days — BIM repository access not yet granted.',
+    blockerAge: '11 days', blockingDepartment: 'IT',
+    nextMilestone: 'IT access approval — TBD (pending security review)',
+    signals: [
+      'IT security review submitted 11 days ago — no response',
+      'Pipeline code complete and ready to test once access is granted',
+      'Escalation to IT leadership requested by project team',
+    ],
+  },
+  {
+    id: 'p07', name: 'Executive Reporting Automation',
+    owner: 'Carol-Ann Remillard', department: 'Executive',
+    stage: 'building', health: 'on-track',
+    stageReason: 'Building — 80% complete, targeting Mar 31 go-live',
+    stageConfidence: 0.88, stageEvidence: ['pipeline 80% complete', 'Mar 31 go-live target'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '4h ago', leadershipAttention: false,
+    statusSummary: 'Pipeline is 80% complete. Weekly digest templates approved by leadership. Slack delivery and Google Drive sync are in final integration. On track for Mar 31 go-live.',
+    topBlocker: null, blockerAge: null, blockingDepartment: null,
+    nextMilestone: 'Full pipeline go-live — Mar 31',
+    signals: [
+      'Weekly digest templates approved by executive leadership',
+      'Slack delivery integration 90% complete',
+      'Google Drive sync tested successfully with sample data',
+    ],
+  },
+  {
+    id: 'p08', name: 'Subcontractor Intelligence Layer',
+    owner: 'Tony Marsh', department: 'Procurement',
+    stage: 'building', health: 'on-track',
+    stageReason: 'Building — scoring algorithm complete, entering stakeholder review before launch',
+    stageConfidence: 0.85, stageEvidence: ['scoring algorithm finalized', 'stakeholder review before pilot'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '1d ago', leadershipAttention: false,
+    statusSummary: 'Data model built and scoring algorithm finalized. Entering stakeholder review with procurement leadership Mar 31. Outcome of that review may influence Q2 scope.',
+    topBlocker: null, blockerAge: null, blockingDepartment: null,
+    nextMilestone: 'Stakeholder review — Mar 31',
+    signals: [
+      'Scoring algorithm finalized and reviewed internally',
+      'Stakeholder review scheduled for Mar 31',
+      'Pilot target: top 200 active subs by contract volume',
+    ],
+  },
+  {
+    id: 'p09', name: 'Field Vision AI (Progress Tracking)',
+    owner: 'Elena Rodriguez', department: 'Operations',
+    stage: 'scoping', health: 'on-track',
+    stageReason: 'Scoping — vendor shortlisting underway, pilot site not yet confirmed',
+    stageConfidence: 0.90, stageEvidence: ['vendor shortlisted', 'kickoff complete', 'evaluating approach'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '3d ago', leadershipAttention: false,
+    statusSummary: 'Kickoff complete. Two computer vision vendors shortlisted — Versatile AI and OpenSpace. Pilot site selection underway; confirmation needed by Apr 1 to protect the Q3 schedule.',
+    topBlocker: null, blockerAge: null, blockingDepartment: null,
+    nextMilestone: 'Pilot site confirmed — Apr 1',
+    signals: [
+      'Kickoff meeting completed Mar 10',
+      'Two CV vendors shortlisted: Versatile AI and OpenSpace',
+      'Site confirmation deadline Apr 1 — watch item',
+    ],
+  },
+  {
+    id: 'p10', name: 'Change Order Prediction Model',
+    owner: 'Brian Scott', department: 'Finance',
+    stage: 'building', health: 'blocked',
+    stageReason: 'Building — architecture designed, blocked before model training can begin',
+    stageConfidence: 0.82, stageEvidence: ['model architecture designed', 'model training blocked — no data access yet'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '2d ago', leadershipAttention: true,
+    statusSummary: 'Model architecture designed and peer-reviewed. Development fully blocked on historical change order data from Procore. Request submitted 8 days ago — no ETA. Training cannot begin without this data.',
+    topBlocker: 'Historical change order data inaccessible — Procore admin request pending 8 days with no ETA.',
+    blockerAge: '8 days', blockingDepartment: 'IT',
+    nextMilestone: 'Data access granted + model training begins — TBD',
+    signals: [
+      'Model architecture designed and peer-reviewed',
+      'Procore admin data request submitted 8 days ago — no response',
+      'Model training fully blocked until data access is granted',
+    ],
+  },
+  {
+    id: 'p11', name: 'Contract Signatory AI',
+    owner: 'Unassigned', department: 'Legal',
+    stage: 'building', health: 'blocked',
+    stageReason: 'Building — workflow built and ready, blocked before any deployment by Legal review',
+    stageConfidence: 0.85, stageEvidence: ['workflow design complete', 'AI routing logic complete', 'pending legal clearance before deployment'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '5d ago', leadershipAttention: true,
+    statusSummary: 'AI-assisted contract signing workflow is built and ready for review. Blocked on Legal sign-off regarding AI authorization boundaries and liability under existing corporate policy. Cannot proceed without legal clearance.',
+    topBlocker: 'Legal review of AI contract signing authorization pending 2 weeks. Liability boundaries must be defined before any deployment.',
+    blockerAge: '14 days', blockingDepartment: 'Legal',
+    nextMilestone: 'Legal sign-off received — TBD',
+    signals: [
+      'Workflow design and AI routing logic complete',
+      'Legal review initiated 14 days ago — no response to follow-up',
+      'Cannot deploy to test environment without legal clearance',
+    ],
+  },
+  {
+    id: 'p12', name: 'RFP Assistant',
+    owner: 'Unassigned', department: 'Preconstruction',
+    stage: 'building', health: 'blocked',
+    stageReason: 'Building — built and validated internally, blocked on SSO before any real users can access it',
+    stageConfidence: 0.87, stageEvidence: ['assistant tested in isolated environment', 'pending Okta SSO integration before enterprise deployment'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '3d ago', leadershipAttention: true,
+    statusSummary: 'RFP response drafting assistant is built and tested in isolated environment. Blocked on Okta SSO integration required for enterprise deployment. IT provisioning request has been open 9 days with no ETA.',
+    topBlocker: 'Okta SSO integration required before enterprise deployment. IT provisioning request open 9 days with no response.',
+    blockerAge: '9 days', blockingDepartment: 'IT',
+    nextMilestone: 'Okta integration complete — TBD (pending IT)',
+    signals: [
+      'Assistant tested and validated in isolated environment',
+      'Okta SSO provisioning request submitted 9 days ago — no ETA from IT',
+      'Ready to deploy to preconstruction team once SSO is cleared',
+    ],
+  },
+  {
+    id: 'p13', name: 'Prime Contract Intelligence',
+    owner: 'Unassigned', department: 'Preconstruction',
+    stage: 'building', health: 'blocked',
+    stageReason: 'Building — pipeline ready for deployment, blocked on infrastructure provisioning',
+    stageConfidence: 0.83, stageEvidence: ['pipeline built and internally reviewed', 'container access not yet granted'],
+    hasEverBeenLive: false, hasEverBeenEnabled: false,
+    lastUpdated: '4d ago', leadershipAttention: true,
+    statusSummary: 'Document processing pipeline for prime contract analysis is ready for deployment. Blocked on container access and infrastructure provisioning. IT approval has not been received — no timeline provided.',
+    topBlocker: 'Infrastructure provisioning and container access pending IT approval. Request submitted 12 days ago — no response.',
+    blockerAge: '12 days', blockingDepartment: 'IT',
+    nextMilestone: 'Container access granted — TBD (pending IT)',
+    signals: [
+      'Document processing pipeline built and internally reviewed',
+      'IT infrastructure provisioning request submitted 12 days ago',
+      'Container access not yet granted — deployment fully blocked',
+    ],
+  },
+];
+
+const DEVELOPMENTS = [
+  {
+    project: 'Safety Incident Classifier',
+    type: 'milestone',
+    time: '3h ago',
+    text: '30-day production milestone reached with zero critical misclassifications. Q2 expansion to 5 additional sites approved by safety leadership.',
+  },
+  {
+    project: 'BIM Data Extraction',
+    type: 'blocker',
+    time: '2d ago',
+    text: 'IT security review now 11 days without a response. Pipeline is complete and ready — access is the only remaining blocker. Escalation needed.',
+  },
+  {
+    project: 'Document Intelligence',
+    type: 'risk',
+    time: '5h ago',
+    text: 'Classification accuracy at 71% on MEP submittals — below the 85% target. Root cause confirmed. Retraining pipeline initiated. 2-week extension requested.',
+  },
+  {
+    project: 'AI Cost Estimating Engine',
+    type: 'milestone',
+    time: '2h ago',
+    text: 'Model validation complete at 94% accuracy against 3-year historical bid data. IT approved Procore API architecture. Q2 pilot on track.',
+  },
+  {
+    project: 'Contract Signatory AI',
+    type: 'blocker',
+    time: '5d ago',
+    text: 'Legal review of AI authorization boundaries has been open 14 days. No response to follow-up. Cannot proceed to testing without legal clearance.',
+  },
+  {
+    project: 'RFP Assistant',
+    type: 'blocker',
+    time: '3d ago',
+    text: 'Okta SSO provisioning request has been open 9 days with no ETA from IT. Solution is fully built and ready to deploy pending this access.',
+  },
+];
+
+
+/* ═══════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════ */
+
+const state = {
+  projects:          [],
+  blockers:          [],
+  signals:           [],
+  summary:           {},
+  stageFilter:       'all',   // set by clicking metric tiles
+  statusFilter:      'all',   // set by status chips
+  search:            '',
+  selectedProjectId: null,
+};
+
+
+/* ═══════════════════════════════════════════════════
+   HELPERS
+═══════════════════════════════════════════════════ */
+
+const STATUS_LABEL = {
+  'on-track': 'On Track',
+  'at-risk':  'At Risk',
+  'blocked':  'Blocked',
+  'planning': 'On Track',  // planning normalises to on-track for display
+};
+
+const STAGE_LABEL = {
+  'scoping':    'Scoping',
+  'building':   'Building',
+  'live':       'Live',
+  'enablement': 'Enablement',
+};
+
+function badge(health) {
+  const h     = health === 'planning' ? 'on-track' : (health || 'on-track');
+  const label = STATUS_LABEL[health] || 'On Track';
+  return `<span class="badge badge--${h}">${label}</span>`;
+}
+
+function stageBadge(stage) {
+  if (!stage || stage === 'planning') return `<span class="stage-badge stage-badge--scoping">Scoping</span>`;
+  const label = STAGE_LABEL[stage] || stage;
+  return `<span class="stage-badge stage-badge--${stage}">${label}</span>`;
+}
+
+function getFiltered() {
+  return state.projects.filter(p => {
+    const okStage  = state.stageFilter  === 'all' || p.stage  === state.stageFilter;
+    // 'planning' is treated as 'on-track' for filter purposes
+    const h = p.health === 'planning' ? 'on-track' : p.health;
+    const okStatus = state.statusFilter === 'all' || h === state.statusFilter;
+    const q = state.search.toLowerCase();
+    const okSearch = !q ||
+      p.name.toLowerCase().includes(q) ||
+      (p.department  || '').toLowerCase().includes(q) ||
+      (p.owner       || '').toLowerCase().includes(q);
+    return okStage && okStatus && okSearch;
+  });
+}
+
+function fmt() {
+  const d = new Date();
+  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+    + ' · '
+    + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+
+
+/* ═══════════════════════════════════════════════════
+   RENDER
+═══════════════════════════════════════════════════ */
+
+function renderAll() {
+  renderTimestamp();
+  renderExec();
+  renderMetrics();
+  renderTable();
+  renderBlockers();
+  renderDevelopments();
+}
+
+function renderTimestamp() {
+  const t = fmt();
+  document.getElementById('ts').textContent        = t;
+  document.getElementById('brief-date').textContent = t;
+}
+
+function renderExec() {
+  function bullets(val) {
+    if (!val || (Array.isArray(val) && !val.length))
+      return '<span class="exec-empty">No items this period.</span>';
+    const arr = Array.isArray(val) ? val : [val];
+    return arr.map(b => `<div class="exec-bullet">${esc(b)}</div>`).join('');
+  }
+  document.getElementById('ec-attention').innerHTML = bullets(state.summary.attention);
+  document.getElementById('ec-positive').innerHTML  = bullets(state.summary.positive);
+  document.getElementById('ec-horizon').innerHTML   = bullets(state.summary.horizon);
+}
+
+function renderMetrics() {
+  const p = state.projects;
+  const tiles = [
+    { key: 'all',        label: 'All Solutions', count: p.length,                                  cls: 'metric-value--default' },
+    { key: 'scoping',    label: 'Scoping',        count: p.filter(x => x.stage === 'scoping').length,    cls: 'metric-value--slate' },
+    { key: 'building',   label: 'Building',       count: p.filter(x => x.stage === 'building').length,   cls: 'metric-value--indigo' },
+    { key: 'live',       label: 'Live',           count: p.filter(x => x.stage === 'live').length,       cls: 'metric-value--green' },
+    { key: 'enablement', label: 'Enablement',     count: p.filter(x => x.stage === 'enablement').length, cls: 'metric-value--amber' },
+  ];
+
+  document.getElementById('metrics').innerHTML = tiles.map(t => `
+    <div class="metric${state.stageFilter === t.key ? ' is-filtered' : ''}"
+         onclick="setStageFilter('${t.key}')">
+      <div class="metric-value ${t.cls}">${t.count}</div>
+      <div class="metric-label">${t.label}</div>
+    </div>
+  `).join('');
+}
+
+function renderTable() {
+  const list = getFiltered();
+  document.getElementById('proj-count').textContent = `${list.length} Solution${list.length !== 1 ? 's' : ''}`;
+
+  if (!list.length) {
+    document.getElementById('proj-table').innerHTML = '<div class="empty">No solutions match your filters.</div>';
+    return;
+  }
+
+  document.getElementById('proj-table').innerHTML = list.map(p => {
+    const dept = p.department && p.department !== 'Unassigned' ? p.department : null;
+    const blocker = p.topBlocker ? p.topBlocker.split('.')[0].replace(/^blocked[:\s]*/i,'') : null;
+    const hint = blocker
+      ? `<div class="row-hint">⚠ ${esc(blocker.length > 60 ? blocker.slice(0,60)+'…' : blocker)}</div>`
+      : (dept ? `<div class="row-hint" style="color:var(--gray-400)">${esc(dept)}</div>` : '');
+    return `
+    <div class="tbl-row${state.selectedProjectId === p.id ? ' is-selected' : ''}" onclick="openPanel('${esc(p.id)}')">
+      <div>${p.leadershipAttention ? '<div class="row-attention"></div>' : ''}</div>
+      <div>
+        <div class="row-name">${esc(p.name)}</div>
+        ${hint}
+      </div>
+      <div>${stageBadge(p.stage)}</div>
+      <div>${badge(p.health)}</div>
+      <div class="row-updated">${esc(p.lastUpdated || '—')}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBlockers() {
+  const list = state.blockers;
+  document.getElementById('blocker-count').textContent = `${list.length} Active`;
+
+  if (!list.length) {
+    document.getElementById('blocker-list').innerHTML = '<div class="empty">No active blockers.</div>';
+    return;
+  }
+
+  document.getElementById('blocker-list').innerHTML = '<div class="blocker-list">' +
+    list.map(b => {
+      const deptLabel = b.blockingDepartment || b.department || '—';
+      return `
+        <div class="blocker" onclick="openPanel('${esc(b.projectId)}')">
+          <div class="blocker-project">${esc(b.project)}</div>
+          <div class="blocker-text">${esc(b.blocker)}</div>
+          <div class="blocker-foot">
+            <div class="sev sev--${b.severity}"></div>
+            <span class="blocker-dept">${esc(deptLabel)}</span>
+            ${b.age && b.age !== '—' ? `<span class="blocker-age">${esc(b.age)}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('')
+  + '</div>';
+}
+
+function renderDevelopments() {
+  const TYPE_LABEL = { blocker: 'Blocker', risk: 'Watch', update: 'Progress', milestone: 'Milestone' };
+  const TYPE_ICON  = { blocker: '⚠', risk: '△', update: '→', milestone: '◆' };
+
+  const html = state.signals.map(s => {
+    // find matching project for click-through
+    const proj = state.projects.find(p => p.name === s.project);
+    const clickAttr = proj ? ` onclick="openPanel('${esc(proj.id)}')" style="cursor:pointer"` : '';
+    return `
+    <div class="signal"${clickAttr}>
+      <div class="signal-top">
+        <span class="signal-project">${esc(s.project)}</span>
+        <span class="signal-time">${esc(s.time)}</span>
+      </div>
+      <span class="signal-type signal-type--${s.type}">${TYPE_ICON[s.type] || ''} ${TYPE_LABEL[s.type] || s.type}</span>
+      <div class="signal-text">${esc(s.text)}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('signals-grid').innerHTML = html ||
+    '<div style="padding:32px;text-align:center;color:var(--gray-400);font-size:0.8rem;grid-column:1/-1">No notable developments this period.</div>';
+}
+
+
+/* ═══════════════════════════════════════════════════
+   DETAIL PANEL
+═══════════════════════════════════════════════════ */
+
+async function openPanel(id) {
+  state.selectedProjectId = id;
+  renderTable();
+
+  const p = await getProjectById(id);
+  if (!p) return;
+
+  // Badges: status + stage
+  document.getElementById('p-badges').innerHTML =
+    badge(p.health) + ' ' + stageBadge(p.stage);
+
+  document.getElementById('p-name').textContent = p.name;
+
+  // Meta line: department · last updated
+  const metaParts = [];
+  if (p.department && p.department !== 'Unassigned') metaParts.push(p.department);
+  if (p.lastUpdated) metaParts.push(`Updated ${p.lastUpdated}`);
+  if (p.nextMilestone && p.nextMilestone !== 'TBD') metaParts.push(`Next: ${p.nextMilestone}`);
+  document.getElementById('p-meta').innerHTML = metaParts.slice(0,3).map(s => `<span>${esc(s)}</span>`).join('');
+
+  // Summary
+  document.getElementById('p-summary').textContent = p.statusSummary || '—';
+
+  // Blocker
+  const bw = document.getElementById('p-blocker-wrap');
+  if (p.topBlocker) {
+    document.getElementById('p-blocker').textContent = p.topBlocker;
+    const deptEl = document.getElementById('p-blocker-dept');
+    deptEl.textContent = p.blockingDepartment ? `Blocking department: ${p.blockingDepartment}` : '';
+    bw.style.display = 'block';
+  } else {
+    bw.style.display = 'none';
+  }
+
+  // Developments
+  const devs = p.recentDevelopments?.length ? p.recentDevelopments : (p.signals || []).map(s => ({ text: s }));
+  document.getElementById('p-signals').innerHTML = devs.map(d => `
+    <div class="signal-entry">
+      <div class="signal-entry-dot"></div>
+      <div class="signal-entry-text">${esc(typeof d === 'string' ? d : d.text)}</div>
+    </div>
+  `).join('') || '<div class="signal-entry-text" style="color:var(--gray-400)">No updates recorded.</div>';
+
+  // Stage classification context
+  const stageReason    = p.stageReason || null;
+  const stageConf      = (typeof p.stageConfidence === 'number') ? Math.round(p.stageConfidence * 100) : null;
+  const stageEvid      = Array.isArray(p.stageEvidence) ? p.stageEvidence.filter(Boolean) : [];
+  const stageSource    = p.stageSource || 'sheet';
+  const baseline       = p.baselineStageFromSheet || null;
+  const lastEvidenceMs = p.lastEvidenceTimestamp || null;
+
+  // Source — doc / slack / combined / sheet (fallback)
+  const SOURCE_LABEL = { doc: 'Doc update', slack: 'Slack signal', combined: 'Doc + Slack', sheet: 'Sheet only (no signals yet)' };
+  document.getElementById('p-stage-source').textContent = SOURCE_LABEL[stageSource] || stageSource;
+
+  // Baseline — only show when it differs from current stage (signals overrode the sheet)
+  const baselineRow = document.getElementById('p-stage-baseline-row');
+  const currentStageNorm = (p.stage || '').toLowerCase();
+  const baselineNorm     = (baseline || '').toLowerCase();
+  if (baseline && baselineNorm !== currentStageNorm) {
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+    document.getElementById('p-stage-baseline').innerHTML =
+      `${esc(cap(baselineNorm))} <span style="color:var(--gray-400);font-size:0.72rem">(overridden by ${esc(SOURCE_LABEL[stageSource] || stageSource)})</span>`;
+    baselineRow.style.display = 'flex';
+  } else {
+    baselineRow.style.display = 'none';
+  }
+
+  document.getElementById('p-stage-reason').textContent = stageReason || 'No classification data.';
+
+  // Evidence list
+  const evidRow = document.getElementById('p-stage-evidence-row');
+  if (stageEvid.length) {
+    document.getElementById('p-stage-evidence').innerHTML =
+      stageEvid.map(e => `<li>${esc(e)}</li>`).join('');
+    evidRow.style.display = 'flex';
+  } else {
+    evidRow.style.display = 'none';
+  }
+
+  // Confidence — with source context
+  const confEl = document.getElementById('p-stage-conf');
+  if (stageConf !== null) {
+    const confLabel = stageConf >= 85 ? 'High' : stageConf >= 60 ? 'Medium' : 'Low';
+    const lowNote   = stageConf < 61 && stageSource === 'sheet' ? ' <span style="color:var(--gray-400);font-size:0.72rem">— sheet baseline only</span>' : '';
+    confEl.innerHTML = `${confLabel} <span class="stage-detail-conf">${stageConf}%</span>${lowNote}`;
+  } else {
+    confEl.textContent = '—';
+  }
+
+  // Last signal timestamp
+  const lastSeenRow = document.getElementById('p-stage-lastseen-row');
+  if (lastEvidenceMs) {
+    document.getElementById('p-stage-lastseen').textContent = timeSince(lastEvidenceMs);
+    lastSeenRow.style.display = 'flex';
+  } else {
+    lastSeenRow.style.display = 'none';
+  }
+
+  // Durable history flags
+  const histRow = document.getElementById('p-stage-history-row');
+  const histParts = [];
+  if (p.hasEverBeenLive)    histParts.push('Has been Live');
+  if (p.hasEverBeenEnabled) histParts.push('Has been in Enablement');
+  if (histParts.length) {
+    document.getElementById('p-stage-history').textContent = histParts.join(' · ');
+    histRow.style.display = 'flex';
+  } else {
+    histRow.style.display = 'none';
+  }
+
+  document.getElementById('overlay').classList.add('is-open');
+  document.getElementById('panel').classList.add('is-open');
+  document.getElementById('panel').scrollTop = 0;
+}
+
+function closePanel() {
+  state.selectedProjectId = null;
+  renderTable();
+  document.getElementById('overlay').classList.remove('is-open');
+  document.getElementById('panel').classList.remove('is-open');
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePanel(); });
+
+
+/* ═══════════════════════════════════════════════════
+   FILTER & SEARCH
+═══════════════════════════════════════════════════ */
+
+function setStatusFilter(f, btn) {
+  state.statusFilter = f;
+  document.querySelectorAll('.chips .chip').forEach(c => c.classList.remove('is-active', 'is-active-danger', 'is-active-amber'));
+  if (btn) {
+    if (f === 'blocked')  btn.classList.add('is-active-danger');
+    else if (f === 'at-risk') btn.classList.add('is-active-amber');
+    else btn.classList.add('is-active');
+  }
+  renderTable();
+}
+
+function setStageFilter(stage) {
+  state.stageFilter = stage;
+  renderMetrics();   // refresh tile active state
+  renderTable();
+}
+
+function handleSearch(v) {
+  state.search = v;
+  renderTable();
+}
+
+// Legacy alias (in case old references exist)
+function setFilter(f, btn) { setStatusFilter(f, btn); }
+
+
+/* ═══════════════════════════════════════════════════
+   MODE PILL
+═══════════════════════════════════════════════════ */
+
+function setModePill(live) {
+  const pill = document.getElementById('mode-pill');
+  const foot = document.getElementById('footer-mode');
+  if (live) {
+    pill.textContent = 'Live';
+    pill.classList.add('is-live');
+    if (foot) foot.textContent = 'Live Mode';
+  } else {
+    pill.textContent = 'Demo';
+    pill.classList.remove('is-live');
+    if (foot) foot.textContent = 'Demo Mode';
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════
+   INIT + REFRESH
+═══════════════════════════════════════════════════ */
+
+async function refresh() {
+  const btn = document.getElementById('btn-refresh');
+  btn.disabled = true;
+
+  try {
+    // ── 1. Detect backend reachability ────────────────────────────────
+    // Only switch to demo mode if the backend is genuinely unreachable.
+    // A sync error or slow response is NOT a reason to fall back to demo.
+    btn.textContent = '↻ Connecting…';
+    isLiveMode = await detectLiveMode();
+    setModePill(isLiveMode);
+
+    if (isLiveMode) {
+      // ── 2. Trigger sync via GET (non-blocking — returns immediately) ──
+      btn.textContent = '↻ Syncing…';
+      console.log('[Dashboard] Sync started');
+
+      let syncOk = false;
+      try {
+        const syncRes = await fetch(`${API_BASE}/api/sync`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(10000),
+        });
+        if (!syncRes.ok) {
+          console.error(`[Dashboard] Sync trigger returned HTTP ${syncRes.status} — loading last known state`);
+        } else {
+          syncOk = true;
+        }
+      } catch (syncErr) {
+        console.warn(`[Dashboard] Sync trigger failed (${syncErr.message}) — loading last known state`);
+      }
+
+      // ── 3. Poll for completion if sync was accepted ────────────────
+      // Backend exposes syncStatus in /api/dashboard/overview.
+      // Poll until 'syncing' clears or timeout is reached.
+      if (syncOk) {
+        const POLL_INTERVAL_MS = 4000;
+        const POLL_TIMEOUT_MS  = 90000; // 90 s max
+        const pollStart = Date.now();
+
+        while (Date.now() - pollStart < POLL_TIMEOUT_MS) {
+          await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+          try {
+            const ov = await fetch(`${API_BASE}/api/dashboard/overview`, {
+              signal: AbortSignal.timeout(8000),
+            });
+            if (ov.ok) {
+              const ovJson = await ov.json();
+              if (ovJson.syncStatus !== 'syncing') {
+                console.log('[Dashboard] Sync complete');
+                break;
+              }
+            }
+          } catch (pollErr) {
+            console.warn(`[Dashboard] Poll check error: ${pollErr.message} — retrying`);
+          }
+        }
+      } else {
+        // Sync didn't start — brief pause then load whatever state the server has
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    }
+
+    // ── 4. Fetch and render dashboard data ─────────────────────────────
+    btn.textContent = '↻ Loading…';
+    const data = await getDashboardData();
+    state.projects = data.projects;
+    state.blockers = data.blockers;
+    state.signals  = data.signals;
+    state.summary  = data.summary;
+    renderAll();
+    console.log(`[Dashboard] Dashboard data loaded — ${state.projects.length} project(s)`);
+
+  } catch (err) {
+    // Only fall back to demo if the backend was never reachable
+    console.error('[Dashboard] Refresh error:', err.message);
+    if (!isLiveMode) {
+      console.log('[Dashboard] Backend unreachable — loading demo data');
+      const data = await mockDataProvider.getDashboardData();
+      state.projects = data.projects;
+      state.blockers = data.blockers;
+      state.signals  = data.signals;
+      state.summary  = data.summary;
+      renderAll();
+    }
+    // If live mode but a data fetch failed, leave the existing state on screen
+    // rather than replacing it with stale demo data
+  } finally {
+    btn.textContent = '↻ Refresh';
+    btn.disabled    = false;
+  }
+}
+
+// Kick off
+(async function init() {
+  await refresh();
+  setInterval(renderTimestamp, 60_000);
+})();
+</script>
+</body>
+</html>
